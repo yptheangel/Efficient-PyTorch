@@ -130,18 +130,30 @@ def dumps_pyarrow(obj):
     return pa.serialize(obj).to_buffer()
 
 
-def folder2lmdb(dpath, name="train", write_frequency=5000, num_workers=16):
-    directory = osp.expanduser(osp.join(dpath, name))
+def folder2lmdb(dpath, size="10G", write_frequency=5000, num_workers=16):
+    # directory = osp.expanduser(osp.join(dpath, name))
+    directory = dpath
+    name=osp.basename(directory)
     print("Loading dataset from %s" % directory)
     dataset = ImageFolder(directory, loader=raw_reader)
     data_loader = DataLoader(dataset, num_workers=num_workers, collate_fn=lambda x: x)
 
     lmdb_path = osp.join(dpath, "%s.lmdb" % name)
     isdir = os.path.isdir(lmdb_path)
+    bytes = size[:-1]
+    unit = size[-1:]
+    if unit == "G":
+        size_int = bytes * 1000000000
+    elif unit == "T":
+        size_int = bytes * 1000000000000
+    else:
+        print("Something went wrong with size allocation")
 
     print("Generate LMDB to %s" % lmdb_path)
     db = lmdb.open(lmdb_path, subdir=isdir,
-                   map_size=1099511627776 * 2, readonly=False,
+                   # map_size=1099511627776 * 2, readonly=False,
+                   # map_size=10000000000 , readonly=False,
+                   map_size=size_int, readonly=False,
                    meminit=False, map_async=True)
     
     print(len(dataset), len(data_loader))
@@ -171,10 +183,11 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--folder", type=str)
-    parser.add_argument('-s', '--split', type=str, default="val")
+    parser.add_argument('-s', '--size', type=str, default="10G")
+    # parser.add_argument('-s', '--split', type=str, default="val")
     parser.add_argument('--out', type=str, default=".")
     parser.add_argument('-p', '--procs', type=int, default=20)
 
     args = parser.parse_args()
 
-    folder2lmdb(args.folder, num_workers=args.procs, name=args.split)
+    folder2lmdb(args.folder, num_workers=args.procs, size=args.size)
