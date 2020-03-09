@@ -143,9 +143,9 @@ def folder2lmdb(dpath, size="10G", write_frequency=5000, num_workers=16):
     bytes = size[:-1]
     unit = size[-1:]
     if unit == "G":
-        size_int = bytes * 1000000000
+        size_int = int(bytes) * 1000000000
     elif unit == "T":
-        size_int = bytes * 1000000000000
+        size_int = int(bytes) * 1000000000000
     else:
         print("Something went wrong with size allocation")
 
